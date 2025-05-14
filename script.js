@@ -13,6 +13,19 @@ document.querySelectorAll('.nav-item').forEach(item => {
   });
 });
 
+// Handle query parameter
+function initializePage() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const page = urlParams.get('page') || 'verseny';
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+  if (page === 'leaderboard') fetchLeaderboard(1);
+  if (page === 'profil') fetchProfile();
+  if (page === 'verseny') checkLoginForGame();
+  // Clear query parameter from URL
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
+
 // Blackjack Game
 const suits = ['♠', '♣', '♥', '♦'];
 const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -238,7 +251,6 @@ async function fetchWithTimeout(url, options = {}) {
 }
 
 // Initialize
-document.getElementById('verseny').classList.add('active');
-checkLoginForGame();
+initializePage();
 fetchBalance();
 setInterval(fetchBalance, 5000);
