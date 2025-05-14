@@ -42,11 +42,13 @@
 
 #leaderboard table {
   text-align: center;
+  width: 100%;
 }
 
 #leaderboard th, #leaderboard td {
   text-align: center;
   padding: 0.5rem;
+  vertical-align: middle;
 }
 
 #profile-content .profile-card {
@@ -66,4 +68,14 @@
 #profile-content .discord-login {
   display: flex;
   justify-content: center;
+  align-items: center;
+  min-height: 200px; /* Ensure vertical centering */
+}
+
+#kuldetesek {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh; /* Center vertically */
 }
