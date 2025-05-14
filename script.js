@@ -1,4 +1,4 @@
-const BACKEND_URL = 'https://blackjack-backend.onrender.com'; // Update with Render URL
+const BACKEND_URL = 'https://blackjack-backend-aew7.onrender.com'; // Update with Render URL
 
 // Navigation
 document.querySelectorAll('.nav-item').forEach(item => {
