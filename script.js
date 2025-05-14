@@ -75,10 +75,11 @@ function renderHand(hand, elementId, hideFirst = false) {
 
 async function checkLoginForGame() {
   try {
-    const response = await fetchWithTimeout(`${BACKEND_URL}/profile`);
+    const response = await fetchWithTimeout(`${BACKEND_URL}/profile`, { credentials: 'include' });
     if (response.ok) {
       document.getElementById('login-message').classList.add('hidden');
       document.getElementById('game-content').classList.remove('hidden');
+      fetchBalance();
     } else {
       document.getElementById('login-message').classList.remove('hidden');
       document.getElementById('game-content').classList.add('hidden');
@@ -100,7 +101,8 @@ document.getElementById('deal-btn').addEventListener('click', async () => {
     const response = await fetch(`${BACKEND_URL}/game/bet`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bet })
+      body: JSON.stringify({ bet }),
+      credentials: 'include'
     });
     if (!response.ok) throw new Error('Failed to place bet');
     const data = await response.json();
@@ -137,7 +139,7 @@ document.getElementById('stay-btn').addEventListener('click', () => {
 // Leaderboard
 async function fetchLeaderboard(page) {
   try {
-    const response = await fetchWithTimeout(`${BACKEND_URL}/leaderboard?page=${page}`);
+    const response = await fetchWithTimeout(`${BACKEND_URL}/leaderboard?page=${page}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch leaderboard');
     const data = await response.json();
     const tbody = document.getElementById('leaderboard-body');
@@ -167,7 +169,7 @@ async function fetchLeaderboard(page) {
 async function fetchProfile() {
   const content = document.getElementById('profile-content');
   try {
-    const response = await fetchWithTimeout(`${BACKEND_URL}/profile`);
+    const response = await fetchWithTimeout(`${BACKEND_URL}/profile`, { credentials: 'include' });
     if (response.ok) {
       const user = await response.json();
       content.innerHTML = `
@@ -184,9 +186,11 @@ async function fetchProfile() {
       fetchBalance();
     } else {
       content.innerHTML = `
-        <a href="${BACKEND_URL}/auth/discord" class="bg-[#5865F2] text-white p-2 rounded flex items-center max-w-xs mx-auto">
-          <i class="fab fa-discord mr-2"></i>Discord
-        </a>
+        <div class="discord-login">
+          <a href="${BACKEND_URL}/auth/discord" class="bg-[#5865F2] text-white p-2 rounded flex items-center max-w-xs">
+            <i class="fab fa-discord mr-2"></i>Discord
+          </a>
+        </div>
       `;
     }
   } catch (err) {
@@ -197,7 +201,7 @@ async function fetchProfile() {
 // Balance
 async function fetchBalance() {
   try {
-    const response = await fetchWithTimeout(`${BACKEND_URL}/balance`);
+    const response = await fetchWithTimeout(`${BACKEND_URL}/balance`, { credentials: 'include' });
     if (response.ok) {
       const data = await response.json();
       document.getElementById('chip-count').innerText = data.chips;
@@ -210,11 +214,12 @@ async function fetchBalance() {
 }
 
 // Fetch with timeout
-async function fetchWithTimeout(url, timeout = 15000) {
+async function fetchWithTimeout(url, options = {}) {
+  const { timeout = 15000, ...fetchOptions } = options;
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, { ...fetchOptions, signal: controller.signal });
     clearTimeout(id);
     return response;
   } catch (error) {
