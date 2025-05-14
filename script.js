@@ -1,4 +1,4 @@
-const BACKEND_URL = 'https://blackjack-backend-aew7.onrender.com'; // Update with Render URL
+const BACKEND_URL = 'https://blackjack-backend-aew7.onrender.com';
 
 // Navigation
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -9,6 +9,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     document.getElementById(page).classList.add('active');
     if (page === 'leaderboard') fetchLeaderboard(1);
     if (page === 'profil') fetchProfile();
+    if (page === 'verseny') checkLoginForGame();
   });
 });
 
@@ -35,7 +36,7 @@ function createDeck() {
 
 function getCardValue(card) {
   if (['J', 'Q', 'K'].includes(card.value)) return 10;
-  if (card.value === 'A') return 11; // Adjusted dynamically in hand value
+  if (card.value === 'A') return 11;
   return parseInt(card.value);
 }
 
@@ -72,6 +73,22 @@ function renderHand(hand, elementId, hideFirst = false) {
   });
 }
 
+async function checkLoginForGame() {
+  try {
+    const response = await fetchWithTimeout(`${BACKEND_URL}/profile`);
+    if (response.ok) {
+      document.getElementById('login-message').classList.add('hidden');
+      document.getElementById('game-content').classList.remove('hidden');
+    } else {
+      document.getElementById('login-message').classList.remove('hidden');
+      document.getElementById('game-content').classList.add('hidden');
+    }
+  } catch (err) {
+    document.getElementById('login-message').classList.remove('hidden');
+    document.getElementById('game-content').classList.add('hidden');
+  }
+}
+
 document.getElementById('deal-btn').addEventListener('click', async () => {
   if (gameState !== 'idle') return;
   const bet = parseInt(document.getElementById('bet-amount').value);
@@ -97,11 +114,9 @@ document.getElementById('deal-btn').addEventListener('click', async () => {
     document.getElementById('game-actions').classList.remove('hidden');
     document.getElementById('game-status').innerText = '';
     fetchBalance();
-    // Check for insurance
     if (dealerHand[1].value === 'A') {
       document.getElementById('insurance-btn').classList.remove('hidden');
     }
-    // Check for split
     if (playerHand[0].value === playerHand[1].value) {
       document.getElementById('split-btn').classList.remove('hidden');
     }
@@ -110,7 +125,7 @@ document.getElementById('deal-btn').addEventListener('click', async () => {
   }
 });
 
-// Game actions (Hit, Stay, etc.) to be implemented
+// Game actions (to be completed)
 document.getElementById('hit-btn').addEventListener('click', () => {
   // Implement hit logic
 });
@@ -122,7 +137,7 @@ document.getElementById('stay-btn').addEventListener('click', () => {
 // Leaderboard
 async function fetchLeaderboard(page) {
   try {
-    const response = await fetch(`${BACKEND_URL}/leaderboard?page=${page}`);
+    const response = await fetchWithTimeout(`${BACKEND_URL}/leaderboard?page=${page}`);
     if (!response.ok) throw new Error('Failed to fetch leaderboard');
     const data = await response.json();
     const tbody = document.getElementById('leaderboard-body');
@@ -152,18 +167,24 @@ async function fetchLeaderboard(page) {
 async function fetchProfile() {
   const content = document.getElementById('profile-content');
   try {
-    const response = await fetch(`${BACKEND_URL}/profile`);
+    const response = await fetchWithTimeout(`${BACKEND_URL}/profile`);
     if (response.ok) {
       const user = await response.json();
       content.innerHTML = `
-        <img src="${user.avatar || 'https://via.placeholder.com/100'}" class="rounded-full w-24 h-24 mb-4">
-        <p>Username: ${user.username}</p>
-        <p>Chips: ${user.chips}</p>
-        <p>Games Played: ${user.gamesPlayed}</p>
+        <div class="profile-card">
+          <img src="${user.avatar || 'https://via.placeholder.com/100'}" class="rounded-full w-32 h-32 mb-4 mx-auto">
+          <h3 class="text-2xl mb-2">${user.username}</h3>
+          <p class="text-lg mb-1">Chips: ${user.chips}</p>
+          <p class="text-lg mb-1">Games Played: ${user.gamesPlayed}</p>
+          <p class="text-lg mb-1">Wins: ${user.wins}</p>
+          <p class="text-lg mb-1">Losses: ${user.losses}</p>
+          <p class="text-lg">Total Bets: ${user.totalBets}</p>
+        </div>
       `;
+      fetchBalance();
     } else {
       content.innerHTML = `
-        <a href="${BACKEND_URL}/auth/discord" class="bg-[#5865F2] text-white p-2 rounded flex items-center max-w-xs">
+        <a href="${BACKEND_URL}/auth/discord" class="bg-[#5865F2] text-white p-2 rounded flex items-center max-w-xs mx-auto">
           <i class="fab fa-discord mr-2"></i>Discord
         </a>
       `;
@@ -176,17 +197,34 @@ async function fetchProfile() {
 // Balance
 async function fetchBalance() {
   try {
-    const response = await fetch(`${BACKEND_URL}/balance`);
+    const response = await fetchWithTimeout(`${BACKEND_URL}/balance`);
     if (response.ok) {
       const data = await response.json();
       document.getElementById('chip-count').innerText = data.chips;
+    } else {
+      document.getElementById('chip-count').innerText = '0';
     }
   } catch (err) {
     document.getElementById('chip-count').innerText = 'Error';
   }
 }
 
+// Fetch with timeout
+async function fetchWithTimeout(url, timeout = 15000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
+}
+
 // Initialize
 document.getElementById('verseny').classList.add('active');
+checkLoginForGame();
 fetchBalance();
-setInterval(fetchBalance, 5000); // Poll every 5 seconds
+setInterval(fetchBalance, 5000);
