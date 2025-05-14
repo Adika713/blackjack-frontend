@@ -9,6 +9,32 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-900 text-white">
+  <!-- Auth Popup -->
+  <div id="auth-popup" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
+      <h2 id="auth-title" class="text-2xl mb-4 text-center">Register</h2>
+      <div id="auth-form">
+        <div class="mb-4">
+          <label for="username" class="block mb-1">Username</label>
+          <input id="username" type="text" class="w-full p-2 rounded text-black" placeholder="3-20 characters, alphanumeric">
+        </div>
+        <div class="mb-4">
+          <label for="email" class="block mb-1">Email</label>
+          <input id="email" type="email" class="w-full p-2 rounded text-black" placeholder="your@email.com">
+        </div>
+        <div class="mb-4">
+          <label for="password" class="block mb-1">Password</label>
+          <input id="password" type="password" class="w-full p-2 rounded text-black" placeholder="8+ characters, 1 letter, 1 number">
+        </div>
+        <div id="auth-error" class="text-red-500 mb-4 hidden"></div>
+        <button id="auth-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">Register</button>
+        <p id="auth-switch" class="mt-4 text-center">
+          Already have an account? <a href="#" id="switch-to-login" class="text-blue-400">Login</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
   <!-- Navbar -->
   <nav class="bg-gray-800 p-4 flex justify-center items-center sticky top-0 z-10 relative">
     <div class="flex space-x-6">
@@ -23,7 +49,7 @@
   <!-- Pages -->
   <div id="verseny" class="page hidden p-6">
     <div id="login-message" class="text-center text-xl">
-      Login to your Discord in Profil page
+      Connect Discord in Profil page to play
     </div>
     <div id="game-content" class="hidden bg-green-900 rounded-lg p-8 max-w-4xl mx-auto shadow-lg">
       <h2 class="text-3xl mb-6 text-center">Blackjack</h2>

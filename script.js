@@ -22,9 +22,84 @@ function initializePage() {
   if (page === 'leaderboard') fetchLeaderboard(1);
   if (page === 'profil') fetchProfile();
   if (page === 'verseny') checkLoginForGame();
-  // Clear query parameter from URL
   window.history.replaceState({}, document.title, window.location.pathname);
 }
+
+// Auth Popup
+const authPopup = document.getElementById('auth-popup');
+const authTitle = document.getElementById('auth-title');
+const authForm = document.getElementById('auth-form');
+const authSubmit = document.getElementById('auth-submit');
+const authError = document.getElementById('auth-error');
+const authSwitch = document.getElementById('auth-switch');
+const switchToLogin = document.getElementById('switch-to-login');
+const usernameInput = document.getElementById('username');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+
+function showAuthPopup(isRegister) {
+  authPopup.classList.remove('hidden');
+  authTitle.textContent = isRegister ? 'Register' : 'Login';
+  authSubmit.textContent = isRegister ? 'Register' : 'Login';
+  usernameInput.parentElement.classList.toggle('hidden', !isRegister);
+  authSwitch.innerHTML = isRegister
+    ? `Already have an account? <a href="#" id="switch-to-login" class="text-blue-400">Login</a>`
+    : `No account? <a href="#" id="switch-to-register" class="text-blue-400">Register</a>`;
+  authError.classList.add('hidden');
+  document.body.style.overflow = 'hidden';
+  document.getElementById(isRegister ? 'switch-to-login' : 'switch-to-register').addEventListener('click', (e) => {
+    e.preventDefault();
+    showAuthPopup(!isRegister);
+  });
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const isRegister = authTitle.textContent === 'Register';
+  const username = usernameInput.value.trim();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  // Client-side validation
+  if (isRegister && (!username || !/^[a-zA-Z0-9_]{3,20}$/.test(username))) {
+    authError.textContent = 'Username must be 3-20 characters, alphanumeric';
+    authError.classList.remove('hidden');
+    return;
+  }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    authError.textContent = 'Invalid email address';
+    authError.classList.remove('hidden');
+    return;
+  }
+  if (!password || !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password)) {
+    authError.textContent = 'Password must be 8+ characters with at least 1 letter and 1 number';
+    authError.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    const endpoint = isRegister ? '/register' : '/login';
+    const body = isRegister ? { username, email, password } : { email, password };
+    const response = await fetchWithTimeout(`${BACKEND_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      credentials: 'include'
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Auth failed');
+    authPopup.classList.add('hidden');
+    document.body.style.overflow = '';
+    fetchProfile();
+    checkLoginForGame();
+    fetchBalance();
+  } catch (err) {
+    authError.textContent = err.message;
+    authError.classList.remove('hidden');
+  }
+}
+
+authSubmit.addEventListener('click', handleAuthSubmit);
 
 // Blackjack Game
 const suits = ['♠', '♣', '♥', '♦'];
@@ -91,7 +166,7 @@ async function checkLoginForGame() {
     const response = await fetchWithTimeout(`${BACKEND_URL}/check-auth`, { credentials: 'include' });
     const data = await response.json();
     console.log('Check Auth:', data);
-    if (data.authenticated) {
+    if (data.authenticated && data.user.discordConnected) {
       document.getElementById('login-message').classList.add('hidden');
       document.getElementById('game-content').classList.remove('hidden');
       fetchBalance();
@@ -120,7 +195,7 @@ document.getElementById('deal-btn').addEventListener('click', async () => {
       body: JSON.stringify({ bet }),
       credentials: 'include'
     });
-    if (!response.ok) throw new Error(`Bet failed: ${response.status}`);
+    if (!response.ok) throw new Error(`Bet failed: ${await response.json().error}`);
     const data = await response.json();
     currentBet = bet;
     gameState = 'playing';
@@ -140,7 +215,7 @@ document.getElementById('deal-btn').addEventListener('click', async () => {
     }
   } catch (err) {
     console.error('Bet Error:', err);
-    document.getElementById('game-status').innerText = 'Error placing bet';
+    document.getElementById('game-status').innerText = err.message;
   }
 });
 
@@ -195,26 +270,26 @@ async function fetchProfile() {
         <div class="profile-card">
           <img src="${user.avatar || 'https://via.placeholder.com/100'}" class="rounded-full w-32 h-32 mb-4 mx-auto">
           <h3 class="text-2xl mb-2">${user.username}</h3>
+          <p class="text-lg mb-1">Email: ${user.email}</p>
           <p class="text-lg mb-1">Chips: ${user.chips}</p>
           <p class="text-lg mb-1">Games Played: ${user.gamesPlayed}</p>
           <p class="text-lg mb-1">Wins: ${user.wins}</p>
           <p class="text-lg mb-1">Losses: ${user.losses}</p>
-          <p class="text-lg">Total Bets: ${user.totalBets}</p>
+          <p class="text-lg mb-1">Total Bets: ${user.totalBets}</p>
+          <div class="${user.discordConnected ? 'discord-connected' : 'discord-login'} mt-4">
+            ${user.discordConnected
+              ? '<span class="bg-[#5865F2] text-white p-2 rounded flex items-center"><i class="fab fa-discord mr-2"></i>Connected</span>'
+              : `<a href="${BACKEND_URL}/auth/discord" class="bg-[#5865F2] text-white p-2 rounded flex items-center"><i class="fab fa-discord mr-2"></i>Connect Discord</a>`}
+          </div>
         </div>
       `;
       fetchBalance();
     } else {
-      content.innerHTML = `
-        <div class="discord-login">
-          <a href="${BACKEND_URL}/auth/discord" class="bg-[#5865F2] text-white p-2 rounded flex items-center max-w-xs">
-            <i class="fab fa-discord mr-2"></i>Discord
-          </a>
-        </div>
-      `;
+      showAuthPopup(true);
     }
   } catch (err) {
     console.error('Profile Error:', err);
-    content.innerHTML = '<p>Error loading profile</p>';
+    showAuthPopup(true);
   }
 }
 
@@ -251,6 +326,23 @@ async function fetchWithTimeout(url, options = {}) {
 }
 
 // Initialize
-initializePage();
-fetchBalance();
+async function initialize() {
+  try {
+    const response = await fetchWithTimeout(`${BACKEND_URL}/check-auth`, { credentials: 'include' });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.authenticated) {
+        initializePage();
+        fetchBalance();
+        return;
+      }
+    }
+    showAuthPopup(true);
+  } catch (err) {
+    console.error('Init Error:', err);
+    showAuthPopup(true);
+  }
+}
+
+initialize();
 setInterval(fetchBalance, 5000);
