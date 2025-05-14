@@ -24,7 +24,7 @@ let gameState = 'idle';
 
 function createDeck() {
   deck = [];
-  for (let i = 0; i < 6; i++) { // 6 decks
+  for (let i = 0; i < 6; i++) {
     for (let suit of suits) {
       for (let value of values) {
         deck.push({ suit, value });
@@ -75,8 +75,10 @@ function renderHand(hand, elementId, hideFirst = false) {
 
 async function checkLoginForGame() {
   try {
-    const response = await fetchWithTimeout(`${BACKEND_URL}/profile`, { credentials: 'include' });
-    if (response.ok) {
+    const response = await fetchWithTimeout(`${BACKEND_URL}/check-auth`, { credentials: 'include' });
+    const data = await response.json();
+    console.log('Check Auth:', data);
+    if (data.authenticated) {
       document.getElementById('login-message').classList.add('hidden');
       document.getElementById('game-content').classList.remove('hidden');
       fetchBalance();
@@ -85,6 +87,7 @@ async function checkLoginForGame() {
       document.getElementById('game-content').classList.add('hidden');
     }
   } catch (err) {
+    console.error('Check Login Error:', err);
     document.getElementById('login-message').classList.remove('hidden');
     document.getElementById('game-content').classList.add('hidden');
   }
@@ -104,7 +107,7 @@ document.getElementById('deal-btn').addEventListener('click', async () => {
       body: JSON.stringify({ bet }),
       credentials: 'include'
     });
-    if (!response.ok) throw new Error('Failed to place bet');
+    if (!response.ok) throw new Error(`Bet failed: ${response.status}`);
     const data = await response.json();
     currentBet = bet;
     gameState = 'playing';
@@ -123,6 +126,7 @@ document.getElementById('deal-btn').addEventListener('click', async () => {
       document.getElementById('split-btn').classList.remove('hidden');
     }
   } catch (err) {
+    console.error('Bet Error:', err);
     document.getElementById('game-status').innerText = 'Error placing bet';
   }
 });
@@ -140,7 +144,7 @@ document.getElementById('stay-btn').addEventListener('click', () => {
 async function fetchLeaderboard(page) {
   try {
     const response = await fetchWithTimeout(`${BACKEND_URL}/leaderboard?page=${page}`, { credentials: 'include' });
-    if (!response.ok) throw new Error('Failed to fetch leaderboard');
+    if (!response.ok) throw new Error(`Leaderboard fetch failed: ${response.status}`);
     const data = await response.json();
     const tbody = document.getElementById('leaderboard-body');
     tbody.innerHTML = '';
@@ -161,6 +165,7 @@ async function fetchLeaderboard(page) {
       pagination.innerHTML += `<button class="mx-1 p-2 ${i === data.page ? 'bg-blue-600' : 'bg-gray-600'} hover:bg-blue-700 rounded" onclick="fetchLeaderboard(${i})">${i}</button>`;
     }
   } catch (err) {
+    console.error('Leaderboard Error:', err);
     document.getElementById('leaderboard-body').innerHTML = '<tr><td colspan="4">Error loading leaderboard</td></tr>';
   }
 }
@@ -170,6 +175,7 @@ async function fetchProfile() {
   const content = document.getElementById('profile-content');
   try {
     const response = await fetchWithTimeout(`${BACKEND_URL}/profile`, { credentials: 'include' });
+    console.log('Profile Fetch Status:', response.status);
     if (response.ok) {
       const user = await response.json();
       content.innerHTML = `
@@ -194,6 +200,7 @@ async function fetchProfile() {
       `;
     }
   } catch (err) {
+    console.error('Profile Error:', err);
     content.innerHTML = '<p>Error loading profile</p>';
   }
 }
@@ -202,6 +209,7 @@ async function fetchProfile() {
 async function fetchBalance() {
   try {
     const response = await fetchWithTimeout(`${BACKEND_URL}/balance`, { credentials: 'include' });
+    console.log('Balance Fetch Status:', response.status);
     if (response.ok) {
       const data = await response.json();
       document.getElementById('chip-count').innerText = data.chips;
@@ -209,6 +217,7 @@ async function fetchBalance() {
       document.getElementById('chip-count').innerText = '0';
     }
   } catch (err) {
+    console.error('Balance Error:', err);
     document.getElementById('chip-count').innerText = 'Error';
   }
 }

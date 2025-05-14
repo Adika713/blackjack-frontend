@@ -69,13 +69,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 200px; /* Ensure vertical centering */
+  min-height: 200px;
 }
 
 #kuldetesek {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 80vh; /* Center vertically */
+  text-align: center;
+  padding: 1.5rem;
 }
