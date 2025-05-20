@@ -295,13 +295,14 @@ async function fetchProfile() {
 
 // Balance
 async function fetchBalance() {
+  console.log('Fetching Balance at:', new Date().toISOString());
   try {
     const response = await fetch('https://blackjack-backend-aew7.onrender.com/balance', {
       method: 'GET',
-      credentials: 'include' // Send cookies
+      credentials: 'include'
     });
     const data = await response.json();
-    console.log('Balance:', data);
+    console.log('Balance Response:', data);
     return data;
   } catch (error) {
     console.error('Balance Error:', error);
@@ -310,13 +311,14 @@ async function fetchBalance() {
 }
 
 async function checkAuth() {
+  console.log('Checking Auth at:', new Date().toISOString());
   try {
     const response = await fetch('https://blackjack-backend-aew7.onrender.com/check-auth', {
       method: 'GET',
-      credentials: 'include' // Send cookies
+      credentials: 'include'
     });
     const data = await response.json();
-    console.log('Auth Check:', data);
+    console.log('Auth Check Response:', data);
     return data;
   } catch (error) {
     console.error('Auth Check Error:', error);
