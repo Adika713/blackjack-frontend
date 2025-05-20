@@ -300,13 +300,13 @@ async function fetchBalance() {
     console.log('Balance Fetch Status:', response.status);
     if (response.ok) {
       const data = await response.json();
-      document.getElementById('chip-count').innerText = `Chips: ${data.chips}`;
+      document.getElementById('chip-count').innerText = data.chips;
     } else {
-      document.getElementById('chip-count').innerText = 'Chips: 0';
+      document.getElementById('chip-count').innerText = '0';
     }
   } catch (err) {
     console.error('Balance Error:', err);
-    document.getElementById('chip-count').innerText = 'Chips: Error';
+    document.getElementById('chip-count').innerText = 'Error';
   }
 }
 
