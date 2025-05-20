@@ -50,12 +50,15 @@ async function registerUser(username, email, password) {
       user = data.user;
       await fetchBalance();
       updateUIAfterAuth();
+      return { status: response.status, data };
     } else {
       console.log('Register failed:', data.error);
+      showError(data.error || 'Registration failed.');
+      return { status: response.status, data };
     }
-    return { status: response.status, data };
   } catch (err) {
     console.error('Register error:', err);
+    showError('Registration failed. Please try again.');
     throw err;
   }
 }
@@ -78,12 +81,15 @@ async function loginUser(email, password) {
       user = data.user;
       await fetchBalance();
       updateUIAfterAuth();
+      return { status: response.status, data };
     } else {
       console.log('Login failed:', data.error);
+      showError(data.error || 'Login failed.');
+      return { status: response.status, data };
     }
-    return { status: response.status, data };
   } catch (err) {
     console.error('Login error:', err);
+    showError('Login failed. Please try again.');
     throw err;
   }
 }
@@ -238,49 +244,47 @@ async function submitGameResult(won, chipsWon) {
 
 // Update balance display
 function updateBalanceDisplay() {
-  const balanceElement = document.getElementById('balance');
-  if (balanceElement) {
-    balanceElement.textContent = `Chips: ${balance}`;
+  const chipCount = document.getElementById('chip-count');
+  if (chipCount) {
+    chipCount.textContent = balance;
   } else {
-    console.warn('Balance element not found (#balance)');
+    console.warn('Chip count element not found (#chip-count)');
   }
 }
 
 // Update UI after auth
 function updateUIAfterAuth() {
   console.log('Updating UI, Page:', window.location.href, 'DOM Elements:', {
-    loginButton: !!document.getElementById('loginButton'),
-    profileButton: !!document.getElementById('profileButton'),
-    balance: !!document.getElementById('balance')
+    authPopup: !!document.getElementById('auth-popup'),
+    balance: !!document.getElementById('balance'),
+    chipCount: !!document.getElementById('chip-count')
   });
 
-  const loginButton = document.getElementById('loginButton');
-  const profileButton = document.getElementById('profileButton');
+  const authPopup = document.getElementById('auth-popup');
   const balanceElement = document.getElementById('balance');
+  const profilLink = document.querySelector('a[data-page="profil"]');
+  const loginMessage = document.getElementById('login-message');
+  const gameContent = document.getElementById('game-content');
 
-  // Log missing elements
-  if (!loginButton) console.warn('Login button not found (#loginButton)');
-  if (!profileButton) console.warn('Profile button not found (#profileButton)');
-  if (!balanceElement) console.warn('Balance element not found (#balance)');
-
-  // Skip if no relevant elements exist
-  if (!loginButton && !profileButton && !balanceElement) {
+  if (!authPopup && !balanceElement && !profilLink) {
     console.warn('No auth-related elements found, skipping UI update');
     return;
   }
 
   try {
     if (user) {
-      if (loginButton) loginButton.style.display = 'none';
-      if (profileButton) profileButton.style.display = 'inline-block';
-      if (balanceElement) {
-        balanceElement.style.display = 'inline-block';
-        updateBalanceDisplay();
-      }
+      if (authPopup) authPopup.classList.add('hidden');
+      if (balanceElement) balanceElement.classList.remove('hidden');
+      if (profilLink) profilLink.classList.add('text-yellow-400');
+      if (loginMessage) loginMessage.classList.add('hidden');
+      if (gameContent) gameContent.classList.remove('hidden');
+      updateBalanceDisplay();
     } else {
-      if (loginButton) loginButton.style.display = 'inline-block';
-      if (profileButton) profileButton.style.display = 'none';
-      if (balanceElement) balanceElement.style.display = 'none';
+      if (authPopup) authPopup.classList.add('hidden');
+      if (balanceElement) balanceElement.classList.add('hidden');
+      if (profilLink) profilLink.classList.remove('text-yellow-400');
+      if (loginMessage) loginMessage.classList.remove('hidden');
+      if (gameContent) gameContent.classList.add('hidden');
     }
   } catch (err) {
     console.error('Error in updateUIAfterAuth:', err);
@@ -289,15 +293,15 @@ function updateUIAfterAuth() {
 
 // Show error message
 function showError(message) {
-  const errorElement = document.getElementById('errorMessage');
+  const errorElement = document.getElementById('auth-error');
   if (errorElement) {
     errorElement.textContent = message;
-    errorElement.style.display = 'block';
+    errorElement.classList.remove('hidden');
     setTimeout(() => {
-      if (errorElement) errorElement.style.display = 'none';
+      if (errorElement) errorElement.classList.add('hidden');
     }, 5000);
   } else {
-    console.warn('Error message element not found (#errorMessage)');
+    console.warn('Auth error element not found (#auth-error)');
     alert(message);
   }
 }
@@ -361,23 +365,21 @@ async function endGame(winner) {
 
 // Update game display
 function updateGameDisplay(result = '') {
-  const gameArea = document.getElementById('gameArea');
-  if (!gameArea) {
-    console.warn('Game area not found (#gameArea)');
+  const gameStatus = document.getElementById('game-status');
+  const dealerHandElement = document.getElementById('dealer-hand');
+  const playerHandElement = document.getElementById('player-hand');
+
+  if (!gameStatus || !dealerHandElement || !playerHandElement) {
+    console.warn('Game display elements not found (#game-status, #dealer-hand, #player-hand)');
     return;
   }
 
-  let html = `
-    <p>Player Hand: ${playerHand.map(card => `${card.value}${card.suit}`).join(', ')} (${calculateHandValue(playerHand)})</p>
-    <p>Dealer Hand: ${dealerHand.map(card => `${card.value}${card.suit}`).join(', ')} (${calculateHandValue(dealerHand)})</p>
-  `;
-  if (result) {
-    html += `<p>${result}</p>`;
-  }
-  gameArea.innerHTML = html;
+  dealerHandElement.innerHTML = dealerHand.map(card => `<div class="card">${card.value}${card.suit}</div>`).join('');
+  playerHandElement.innerHTML = playerHand.map(card => `<div class="card">${card.value}${card.suit}</div>`).join('');
+  gameStatus.textContent = result || `Player: ${calculateHandValue(playerHand)} | Dealer: ${gameState === 'playing' ? '?' : calculateHandValue(dealerHand)}`;
 
-  const hitButton = document.getElementById('hitButton');
-  const standButton = document.getElementById('standButton');
+  const hitButton = document.getElementById('hit-btn');
+  const standButton = document.getElementById('stay-btn');
   if (hitButton) hitButton.disabled = gameState !== 'playing';
   if (standButton) standButton.disabled = gameState !== 'playing';
 }
@@ -385,66 +387,103 @@ function updateGameDisplay(result = '') {
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM loaded, checking auth...', 'Page:', window.location.href);
-  // Delay checkAuth to ensure DOM is fully loaded
   setTimeout(() => {
     checkAuth();
   }, 100);
 
-  const registerForm = document.getElementById('registerForm');
-  if (registerForm) {
-    registerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = document.getElementById('registerUsername')?.value;
-      const email = document.getElementById('registerEmail')?.value;
-      const password = document.getElementById('registerPassword')?.value;
-      if (!username || !email || !password) {
-        showError('Please fill in all fields.');
-        return;
-      }
-      try {
-        const result = await registerUser(username, email, password);
-        if (result.status === 200) {
-          window.location.href = '/?page=profil';
-        } else {
-          showError(result.data.error || 'Registration failed.');
-        }
-      } catch (err) {
-        showError('Registration failed. Please try again.');
-      }
-    });
-  } else {
-    console.warn('Register form not found (#registerForm)');
+  // Auth form handling
+  const authPopup = document.getElementById('auth-popup');
+  const authTitle = document.getElementById('auth-title');
+  const authSubmit = document.getElementById('auth-submit');
+  const switchLink = document.getElementById('switch-to-login');
+  const authSwitch = document.getElementById('auth-switch');
+  let isRegisterMode = true;
+
+  if (!authPopup || !authTitle || !authSubmit || !switchLink || !authSwitch) {
+    console.warn('Auth elements not found (#auth-popup, #auth-title, #auth-submit, #switch-to-login, #auth-switch)');
   }
 
-  const loginForm = document.getElementById('loginForm');
-  if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
+  if (switchLink) {
+    switchLink.addEventListener('click', (e) => {
       e.preventDefault();
-      const email = document.getElementById('loginEmail')?.value;
-      const password = document.getElementById('loginPassword')?.value;
-      if (!email || !password) {
-        showError('Please fill in all fields.');
-        return;
-      }
-      try {
-        const result = await loginUser(email, password);
-        if (result.status === 200) {
-          window.location.href = '/?page=profil';
-        } else {
-          showError(result.data.error || 'Login failed.');
-        }
-      } catch (err) {
-        showError('Login failed. Please try again.');
-      }
+      isRegisterMode = !isRegisterMode;
+      authTitle.textContent = isRegisterMode ? 'Register' : 'Login';
+      authSubmit.textContent = isRegisterMode ? 'Register' : 'Login';
+      authSwitch.innerHTML = isRegisterMode
+        ? 'Already have an account? <a href="#" id="switch-to-login" class="text-blue-400">Login</a>'
+        : 'Need an account? <a href="#" id="switch-to-login" class="text-blue-400">Register</a>';
+      // Rebind event listener for new switch link
+      document.getElementById('switch-to-login').addEventListener('click', arguments.callee);
+      document.getElementById('username').style.display = isRegisterMode ? 'block' : 'none';
     });
-  } else {
-    console.warn('Login form not found (#loginForm)');
   }
 
-  const betButton = document.getElementById('betButton');
-  if (betButton) {
-    betButton.addEventListener('click', () => {
-      const betInput = document.getElementById('betAmount');
+  if (authSubmit) {
+    authSubmit.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username')?.value;
+      const email = document.getElementById('email')?.value;
+      const password = document.getElementById('password')?.value;
+
+      if (isRegisterMode) {
+        if (!username || !email || !password) {
+          showError('Please fill in all fields.');
+          return;
+        }
+        try {
+          const result = await registerUser(username, email, password);
+          if (result.status === 200) {
+            if (authPopup) authPopup.classList.add('hidden');
+            window.location.href = '/?page=profil';
+          }
+        } catch (err) {
+          // Error shown in registerUser
+        }
+      } else {
+        if (!email || !password) {
+          showError('Please fill in all fields.');
+          return;
+        }
+        try {
+          const result = await loginUser(email, password);
+          if (result.status === 200) {
+            if (authPopup) authPopup.classList.add('hidden');
+            window.location.href = '/?page=profil';
+          }
+        } catch (err) {
+          // Error shown in loginUser
+        }
+      }
+    });
+  }
+
+  // Navigation handling
+  const navItems = document.querySelectorAll('.nav-item');
+  if (navItems.length === 0) {
+    console.warn('No navigation items found (.nav-item)');
+  }
+  navItems.forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      const page = item.getAttribute('data-page');
+      document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+      const targetPage = document.getElementById(page);
+      if (targetPage) {
+        targetPage.classList.remove('hidden');
+      } else {
+        console.warn(`Page not found (#${page})`);
+      }
+      if (page === 'profil' && !user) {
+        if (authPopup) authPopup.classList.remove('hidden');
+      }
+    });
+  });
+
+  // Game buttons
+  const dealButton = document.getElementById('deal-btn');
+  if (dealButton) {
+    dealButton.addEventListener('click', () => {
+      const betInput = document.getElementById('bet-amount');
       const betAmount = betInput ? parseInt(betInput.value) : 0;
       if (betAmount <= 0) {
         showError('Please enter a valid bet amount.');
@@ -453,46 +492,29 @@ document.addEventListener('DOMContentLoaded', () => {
       startGame(betAmount);
     });
   } else {
-    console.warn('Bet button not found (#betButton)');
+    console.warn('Deal button not found (#deal-btn)');
   }
 
-  const hitButton = document.getElementById('hitButton');
+  const hitButton = document.getElementById('hit-btn');
   if (hitButton) {
     hitButton.addEventListener('click', hit);
   } else {
-    console.warn('Hit button not found (#hitButton)');
+    console.warn('Hit button not found (#hit-btn)');
   }
 
-  const standButton = document.getElementById('standButton');
+  const standButton = document.getElementById('stay-btn');
   if (standButton) {
     standButton.addEventListener('click', stand);
   } else {
-    console.warn('Stand button not found (#standButton)');
+    console.warn('Stay button not found (#stay-btn)');
   }
 
-  const loginButton = document.getElementById('loginButton');
-  if (loginButton) {
-    loginButton.addEventListener('click', () => {
-      const authPopup = document.getElementById('authPopup');
-      if (authPopup) {
-        authPopup.style.display = 'block';
-      } else {
-        console.warn('Auth popup not found (#authPopup)');
-      }
-    });
-  } else {
-    console.warn('Login button not found (#loginButton)');
-  }
-
-  const closePopup = document.getElementById('closePopup');
-  if (closePopup) {
-    closePopup.addEventListener('click', () => {
-      const authPopup = document.getElementById('authPopup');
-      if (authPopup) {
-        authPopup.style.display = 'none';
-      }
-    });
-  } else {
-    console.warn('Close popup button not found (#closePopup)');
-  }
+  // Temporary auth trigger (remove once profil link is confirmed working)
+  const tempAuthTrigger = document.createElement('button');
+  tempAuthTrigger.textContent = 'Open Auth Popup';
+  tempAuthTrigger.className = 'fixed top-4 left-4 bg-blue-600 text-white p-2 rounded';
+  document.body.appendChild(tempAuthTrigger);
+  tempAuthTrigger.addEventListener('click', () => {
+    if (authPopup) authPopup.classList.remove('hidden');
+  });
 });
