@@ -34,6 +34,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 30000) {
 
 // Register user
 async function registerUser(username, email, password) {
+  console.log('Attempting register:', { username, email });
   try {
     const response = await fetchWithTimeout(`${BACKEND_URL}/register`, {
       method: 'POST',
@@ -65,6 +66,7 @@ async function registerUser(username, email, password) {
 
 // Login user
 async function loginUser(email, password) {
+  console.log('Attempting login:', { email });
   try {
     const response = await fetchWithTimeout(`${BACKEND_URL}/login`, {
       method: 'POST',
@@ -265,6 +267,7 @@ function updateUIAfterAuth() {
   const profilLink = document.querySelector('a[data-page="profil"]');
   const loginMessage = document.getElementById('login-message');
   const gameContent = document.getElementById('game-content');
+  const profileContent = document.getElementById('profile-content');
 
   if (!authPopup && !balanceElement && !profilLink) {
     console.warn('No auth-related elements found, skipping UI update');
@@ -278,13 +281,32 @@ function updateUIAfterAuth() {
       if (profilLink) profilLink.classList.add('text-yellow-400');
       if (loginMessage) loginMessage.classList.add('hidden');
       if (gameContent) gameContent.classList.remove('hidden');
+      if (profileContent) {
+        profileContent.innerHTML = `
+          <div class="bg-gray-800 p-6 rounded-lg">
+            <h2 class="text-2xl mb-4">Profile</h2>
+            <p>Username: ${user.username}</p>
+            <p>Email: ${user.email}</p>
+            <p>Chips: ${balance}</p>
+            <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white p-2 rounded mt-4">Logout</button>
+          </div>
+        `;
+        document.getElementById('logout-btn')?.addEventListener('click', () => {
+          user = null;
+          jwtToken = null;
+          localStorage.removeItem('jwtToken');
+          updateUIAfterAuth();
+          window.location.href = '/';
+        });
+      }
       updateBalanceDisplay();
     } else {
-      if (authPopup) authPopup.classList.add('hidden');
+      if (authPopup) authPopup.classList.remove('hidden'); // Show popup if not logged in on profile page
       if (balanceElement) balanceElement.classList.add('hidden');
       if (profilLink) profilLink.classList.remove('text-yellow-400');
       if (loginMessage) loginMessage.classList.remove('hidden');
       if (gameContent) gameContent.classList.add('hidden');
+      if (profileContent) profileContent.innerHTML = '';
     }
   } catch (err) {
     console.error('Error in updateUIAfterAuth:', err);
@@ -397,6 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const authSubmit = document.getElementById('auth-submit');
   const switchLink = document.getElementById('switch-to-login');
   const authSwitch = document.getElementById('auth-switch');
+  const usernameInput = document.getElementById('username');
   let isRegisterMode = true;
 
   if (!authPopup || !authTitle || !authSubmit || !switchLink || !authSwitch) {
@@ -406,22 +429,30 @@ document.addEventListener('DOMContentLoaded', () => {
   if (switchLink) {
     switchLink.addEventListener('click', (e) => {
       e.preventDefault();
+      console.log('Switching auth mode, current:', isRegisterMode);
       isRegisterMode = !isRegisterMode;
       authTitle.textContent = isRegisterMode ? 'Register' : 'Login';
       authSubmit.textContent = isRegisterMode ? 'Register' : 'Login';
       authSwitch.innerHTML = isRegisterMode
         ? 'Already have an account? <a href="#" id="switch-to-login" class="text-blue-400">Login</a>'
         : 'Need an account? <a href="#" id="switch-to-login" class="text-blue-400">Register</a>';
-      // Rebind event listener for new switch link
-      document.getElementById('switch-to-login').addEventListener('click', arguments.callee);
-      document.getElementById('username').style.display = isRegisterMode ? 'block' : 'none';
+      if (usernameInput) {
+        usernameInput.style.display = isRegisterMode ? 'block' : 'none';
+        usernameInput.parentElement.style.display = isRegisterMode ? 'block' : 'none';
+      }
+      // Rebind switch link
+      const newSwitchLink = document.getElementById('switch-to-login');
+      if (newSwitchLink) {
+        newSwitchLink.addEventListener('click', arguments.callee);
+      }
     });
   }
 
   if (authSubmit) {
     authSubmit.addEventListener('click', async (e) => {
       e.preventDefault();
-      const username = document.getElementById('username')?.value;
+      console.log('Auth submit clicked, mode:', isRegisterMode);
+      const username = usernameInput?.value;
       const email = document.getElementById('email')?.value;
       const password = document.getElementById('password')?.value;
 
@@ -457,6 +488,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Close auth popup
+  const closeButton = document.createElement('button');
+  closeButton.textContent = '×';
+  closeButton.className = 'absolute top-2 right-2 text-white text-xl';
+  const authPopupInner = authPopup?.querySelector('div');
+  if (authPopupInner) {
+    authPopupInner.appendChild(closeButton);
+    closeButton.addEventListener('click', () => {
+      if (authPopup) authPopup.classList.add('hidden');
+    });
+  }
+
   // Navigation handling
   const navItems = document.querySelectorAll('.nav-item');
   if (navItems.length === 0) {
@@ -466,6 +509,7 @@ document.addEventListener('DOMContentLoaded', () => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
       const page = item.getAttribute('data-page');
+      console.log('Nav item clicked:', page);
       document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
       const targetPage = document.getElementById(page);
       if (targetPage) {
@@ -474,7 +518,10 @@ document.addEventListener('DOMContentLoaded', () => {
         console.warn(`Page not found (#${page})`);
       }
       if (page === 'profil' && !user) {
-        if (authPopup) authPopup.classList.remove('hidden');
+        if (authPopup) {
+          authPopup.classList.remove('hidden');
+          console.log('Opening auth popup for profile page');
+        }
       }
     });
   });
@@ -483,6 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const dealButton = document.getElementById('deal-btn');
   if (dealButton) {
     dealButton.addEventListener('click', () => {
+      console.log('Deal button clicked');
       const betInput = document.getElementById('bet-amount');
       const betAmount = betInput ? parseInt(betInput.value) : 0;
       if (betAmount <= 0) {
@@ -509,12 +557,15 @@ document.addEventListener('DOMContentLoaded', () => {
     console.warn('Stay button not found (#stay-btn)');
   }
 
-  // Temporary auth trigger (remove once profil link is confirmed working)
+  // Temporary auth trigger
   const tempAuthTrigger = document.createElement('button');
   tempAuthTrigger.textContent = 'Open Auth Popup';
-  tempAuthTrigger.className = 'fixed top-4 left-4 bg-blue-600 text-white p-2 rounded';
+  tempAuthTrigger.className = 'fixed top-4 left-4 bg-blue-600 text-white p-2 rounded z-50';
   document.body.appendChild(tempAuthTrigger);
   tempAuthTrigger.addEventListener('click', () => {
-    if (authPopup) authPopup.classList.remove('hidden');
+    console.log('Temporary auth trigger clicked');
+    if (authPopup) {
+      authPopup.classList.remove('hidden');
+    }
   });
 });
