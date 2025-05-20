@@ -1,9 +1,5 @@
 const BACKEND_URL = 'https://blackjack-backend-aew7.onrender.com';
 
-// Global variables for profile persistence
-window.profileData = null;
-window.showProfileCard = false; // Default to false
-
 // Navigation
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', (e) => {
@@ -14,23 +10,19 @@ document.querySelectorAll('.nav-item').forEach(item => {
     if (page === 'leaderboard') fetchLeaderboard(1);
     if (page === 'profil') fetchProfile();
     if (page === 'verseny') checkLoginForGame();
-    // Render global profile card only after Profil is visited
-    renderGlobalProfileCard();
   });
 });
 
 // Handle query parameter
 function initializePage() {
   const urlParams = new URLSearchParams(window.location.search);
-  const page = urlParams.get('page') || 'verseny'; // Default to 'verseny'
+  const page = urlParams.get('page') || 'verseny';
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(page).classList.add('active');
   if (page === 'leaderboard') fetchLeaderboard(1);
-  if (page === 'verseny') checkLoginForGame();
-  // Only fetch profile if initial page is 'profil'
   if (page === 'profil') fetchProfile();
+  if (page === 'verseny') checkLoginForGame();
   window.history.replaceState({}, document.title, window.location.pathname);
-  renderGlobalProfileCard(); // Render based on current state
 }
 
 // Auth Popup
@@ -98,7 +90,7 @@ async function handleAuthSubmit(e) {
     if (!response.ok) throw new Error(data.error || 'Auth failed');
     authPopup.classList.add('hidden');
     document.body.style.overflow = '';
-    fetchProfile(); // Fetch profile after login/register if on Profil page
+    fetchProfile();
     checkLoginForGame();
     fetchBalance();
   } catch (err) {
@@ -274,8 +266,6 @@ async function fetchProfile() {
     console.log('Profile Fetch Status:', response.status);
     if (response.ok) {
       const user = await response.json();
-      window.profileData = user; // Store globally
-      window.showProfileCard = true; // Set to true only after Profil page visit
       content.innerHTML = `
         <div class="profile-card">
           <img src="${user.avatar || 'https://via.placeholder.com/100'}" class="rounded-full w-32 h-32 mb-4 mx-auto">
@@ -294,29 +284,12 @@ async function fetchProfile() {
         </div>
       `;
       fetchBalance();
-      renderGlobalProfileCard(); // Render global card after fetch
     } else {
       showAuthPopup(true);
     }
   } catch (err) {
     console.error('Profile Error:', err);
     showAuthPopup(true);
-  }
-}
-
-// Render Global Profile Card
-function renderGlobalProfileCard() {
-  const globalCard = document.getElementById('global-profile-card');
-  if (window.showProfileCard && window.profileData) {
-    globalCard.innerHTML = `
-      <img src="${window.profileData.avatar || 'https://via.placeholder.com/50'}" class="rounded-full w-12 h-12 mb-2 mx-auto">
-      <h3 class="text-lg mb-1">${window.profileData.username}</h3>
-      <p class="text-sm mb-1">Chips: ${window.profileData.chips}</p>
-      <p class="text-sm mb-1">Games Played: ${window.profileData.gamesPlayed}</p>
-    `;
-    globalCard.style.display = 'block';
-  } else {
-    globalCard.style.display = 'none';
   }
 }
 
@@ -328,10 +301,6 @@ async function fetchBalance() {
     if (response.ok) {
       const data = await response.json();
       document.getElementById('chip-count').innerText = `Chips: ${data.chips}`;
-      if (window.profileData) {
-        window.profileData.chips = data.chips; // Update global profile data
-        if (window.showProfileCard) renderGlobalProfileCard(); // Update global card only if active
-      }
     } else {
       document.getElementById('chip-count').innerText = 'Chips: 0';
     }

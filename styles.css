@@ -110,34 +110,3 @@
   outline: none;
   border-color: #3b82f6;
 }
-
-/* Global Profile Card Styles */
-#global-profile-card {
-  background: #1f2937;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 1rem;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  font-family: 'Roboto', sans-serif;
-  max-width: 250px;
-  display: none; /* Hidden by default */
-}
-
-#global-profile-card img {
-  border: 2px solid #ffd700;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  margin-bottom: 0.5rem;
-}
-
-#global-profile-card h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-#global-profile-card p {
-  margin: 0.25rem 0;
-  font-size: 0.9rem;
-}
