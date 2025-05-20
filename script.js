@@ -32,6 +32,7 @@ const authForm = document.getElementById('auth-form');
 const authSubmit = document.getElementById('auth-submit');
 const authError = document.getElementById('auth-error');
 const authSwitch = document.getElementById('auth-switch');
+const switchToLogin = document.getElementById('switch-to-login');
 const usernameInput = document.getElementById('username');
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
