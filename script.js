@@ -2,7 +2,7 @@ const BACKEND_URL = 'https://blackjack-backend-aew7.onrender.com';
 
 // Global variables for profile persistence
 window.profileData = null;
-window.showProfileCard = false;
+window.showProfileCard = false; // Default to false
 
 // Navigation
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -14,7 +14,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     if (page === 'leaderboard') fetchLeaderboard(1);
     if (page === 'profil') fetchProfile();
     if (page === 'verseny') checkLoginForGame();
-    // Render global profile card if data exists and flag is set
+    // Render global profile card only after Profil is visited
     renderGlobalProfileCard();
   });
 });
@@ -22,14 +22,15 @@ document.querySelectorAll('.nav-item').forEach(item => {
 // Handle query parameter
 function initializePage() {
   const urlParams = new URLSearchParams(window.location.search);
-  const page = urlParams.get('page') || 'verseny';
+  const page = urlParams.get('page') || 'verseny'; // Default to 'verseny'
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(page).classList.add('active');
   if (page === 'leaderboard') fetchLeaderboard(1);
-  if (page === 'profil') fetchProfile();
   if (page === 'verseny') checkLoginForGame();
+  // Only fetch profile if initial page is 'profil'
+  if (page === 'profil') fetchProfile();
   window.history.replaceState({}, document.title, window.location.pathname);
-  renderGlobalProfileCard(); // Render on initial load
+  renderGlobalProfileCard(); // Render based on current state
 }
 
 // Auth Popup
@@ -97,7 +98,7 @@ async function handleAuthSubmit(e) {
     if (!response.ok) throw new Error(data.error || 'Auth failed');
     authPopup.classList.add('hidden');
     document.body.style.overflow = '';
-    fetchProfile();
+    fetchProfile(); // Fetch profile after login/register if on Profil page
     checkLoginForGame();
     fetchBalance();
   } catch (err) {
@@ -274,7 +275,7 @@ async function fetchProfile() {
     if (response.ok) {
       const user = await response.json();
       window.profileData = user; // Store globally
-      window.showProfileCard = true; // Enable global display
+      window.showProfileCard = true; // Set to true only after Profil page visit
       content.innerHTML = `
         <div class="profile-card">
           <img src="${user.avatar || 'https://via.placeholder.com/100'}" class="rounded-full w-32 h-32 mb-4 mx-auto">
@@ -329,7 +330,7 @@ async function fetchBalance() {
       document.getElementById('chip-count').innerText = `Chips: ${data.chips}`;
       if (window.profileData) {
         window.profileData.chips = data.chips; // Update global profile data
-        renderGlobalProfileCard(); // Update global card with new chips
+        if (window.showProfileCard) renderGlobalProfileCard(); // Update global card only if active
       }
     } else {
       document.getElementById('chip-count').innerText = 'Chips: 0';
