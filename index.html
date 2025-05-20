@@ -4,14 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blackjack</title>
-  <link href="/public/output.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    #auth-popup:not(.hidden) {
+      display: flex !important;
+      z-index: 1000 !important;
+    }
+  </style>
 </head>
 <body class="bg-gray-900 text-white">
   <!-- Auth Popup -->
   <div id="auth-popup" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
-    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full">
+    <div class="bg-gray-800 p-6 rounded-lg max-w-md w-full relative">
+      <button id="close-auth-popup" class="absolute top-2 right-2 text-white text-xl">×</button>
       <h2 id="auth-title" class="text-2xl mb-4 text-center">Register</h2>
       <div id="auth-form">
         <div class="mb-4">
@@ -28,8 +35,8 @@
         </div>
         <div id="auth-error" class="text-red-500 mb-4 hidden"></div>
         <button id="auth-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">Register</button>
-        <p id="auth-switch" class="mt-4 text-center">
-          Already have an account? <a href="#" id="switch-to-login" class="text-blue-400">Login</a>
+        <p class="mt-4 text-center">
+          <a href="#" id="switch-to-login" class="text-blue-400">Login</a>
         </p>
       </div>
     </div>

@@ -301,7 +301,7 @@ function updateUIAfterAuth() {
       }
       updateBalanceDisplay();
     } else {
-      if (authPopup && window.location.pathname.includes('/profil')) {
+      if (authPopup && window.location.pathname.includes('profil')) {
         authPopup.classList.remove('hidden');
       }
       if (balanceElement) balanceElement.classList.add('hidden');
@@ -425,6 +425,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!authPopup || !authTitle || !authSubmit || !switchLink) {
     console.warn('Auth elements not found (#auth-popup, #auth-title, #auth-submit, #switch-to-login)');
+  } else {
+    console.log('Auth elements initialized successfully');
   }
 
   if (switchLink) {
@@ -445,7 +447,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (authSubmit) {
     authSubmit.addEventListener('click', async (e) => {
       e.preventDefault();
-      console.log('Auth submit clicked, mode:', isRegisterMode);
+      console.log('Auth submit clicked, mode:', isRegisterMode, 'Inputs:', {
+        username: usernameInput?.value,
+        email: document.getElementById('email')?.value,
+        password: document.getElementById('password')?.value
+      });
       const username = usernameInput?.value;
       const email = document.getElementById('email')?.value;
       const password = document.getElementById('password')?.value;
