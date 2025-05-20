@@ -1,0 +1,1 @@
+node_modules/ .DS_Store *.log src/ public/ tailwind.config.js postcss.config.js package.json package-lock.json
