@@ -1,5 +1,9 @@
 const BACKEND_URL = 'https://blackjack-backend-aew7.onrender.com';
 
+// Global variables for profile persistence
+window.profileData = null;
+window.showProfileCard = false;
+
 // Navigation
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', (e) => {
@@ -10,6 +14,8 @@ document.querySelectorAll('.nav-item').forEach(item => {
     if (page === 'leaderboard') fetchLeaderboard(1);
     if (page === 'profil') fetchProfile();
     if (page === 'verseny') checkLoginForGame();
+    // Render global profile card if data exists and flag is set
+    renderGlobalProfileCard();
   });
 });
 
@@ -23,6 +29,7 @@ function initializePage() {
   if (page === 'profil') fetchProfile();
   if (page === 'verseny') checkLoginForGame();
   window.history.replaceState({}, document.title, window.location.pathname);
+  renderGlobalProfileCard(); // Render on initial load
 }
 
 // Auth Popup
@@ -266,6 +273,8 @@ async function fetchProfile() {
     console.log('Profile Fetch Status:', response.status);
     if (response.ok) {
       const user = await response.json();
+      window.profileData = user; // Store globally
+      window.showProfileCard = true; // Enable global display
       content.innerHTML = `
         <div class="profile-card">
           <img src="${user.avatar || 'https://via.placeholder.com/100'}" class="rounded-full w-32 h-32 mb-4 mx-auto">
@@ -284,12 +293,29 @@ async function fetchProfile() {
         </div>
       `;
       fetchBalance();
+      renderGlobalProfileCard(); // Render global card after fetch
     } else {
       showAuthPopup(true);
     }
   } catch (err) {
     console.error('Profile Error:', err);
     showAuthPopup(true);
+  }
+}
+
+// Render Global Profile Card
+function renderGlobalProfileCard() {
+  const globalCard = document.getElementById('global-profile-card');
+  if (window.showProfileCard && window.profileData) {
+    globalCard.innerHTML = `
+      <img src="${window.profileData.avatar || 'https://via.placeholder.com/50'}" class="rounded-full w-12 h-12 mb-2 mx-auto">
+      <h3 class="text-lg mb-1">${window.profileData.username}</h3>
+      <p class="text-sm mb-1">Chips: ${window.profileData.chips}</p>
+      <p class="text-sm mb-1">Games Played: ${window.profileData.gamesPlayed}</p>
+    `;
+    globalCard.style.display = 'block';
+  } else {
+    globalCard.style.display = 'none';
   }
 }
 
@@ -300,13 +326,17 @@ async function fetchBalance() {
     console.log('Balance Fetch Status:', response.status);
     if (response.ok) {
       const data = await response.json();
-      document.getElementById('chip-count').innerText = data.chips;
+      document.getElementById('chip-count').innerText = `Chips: ${data.chips}`;
+      if (window.profileData) {
+        window.profileData.chips = data.chips; // Update global profile data
+        renderGlobalProfileCard(); // Update global card with new chips
+      }
     } else {
-      document.getElementById('chip-count').innerText = '0';
+      document.getElementById('chip-count').innerText = 'Chips: 0';
     }
   } catch (err) {
     console.error('Balance Error:', err);
-    document.getElementById('chip-count').innerText = 'Error';
+    document.getElementById('chip-count').innerText = 'Chips: Error';
   }
 }
 
