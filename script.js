@@ -23,7 +23,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 30000) {
       }
     });
     clearTimeout(id);
-    console.log('Fetch response:', url, 'Status:', response.status);
+    console.log('Fetch response:', url, 'Status:', response.status, 'Headers:', response.headers);
     return response;
   } catch (error) {
     clearTimeout(id);
@@ -48,7 +48,10 @@ async function registerUser(username, email, password) {
       localStorage.setItem('jwtToken', jwtToken);
       console.log('Stored JWT token:', jwtToken.slice(0, 10) + '...');
       user = data.user;
+      await fetchBalance();
       updateUIAfterAuth();
+    } else {
+      console.log('Register failed:', data.error);
     }
     return { status: response.status, data };
   } catch (err) {
@@ -73,7 +76,10 @@ async function loginUser(email, password) {
       localStorage.setItem('jwtToken', jwtToken);
       console.log('Stored JWT token:', jwtToken.slice(0, 10) + '...');
       user = data.user;
+      await fetchBalance();
       updateUIAfterAuth();
+    } else {
+      console.log('Login failed:', data.error);
     }
     return { status: response.status, data };
   } catch (err) {
@@ -88,7 +94,7 @@ async function fetchBalance() {
     const response = await fetchWithTimeout(`${BACKEND_URL}/balance`, {
       credentials: 'include'
     });
-    console.log('Balance Fetch Status:', response.status);
+    console.log('Balance Fetch Status:', response.status, 'Token Sent:', !!jwtToken);
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to fetch balance');
     balance = data.chips;
@@ -114,6 +120,7 @@ async function checkAuth() {
       await fetchBalance();
       updateUIAfterAuth();
     } else {
+      console.log('Not authenticated:', data.error || 'No valid session');
       user = null;
       jwtToken = null;
       localStorage.removeItem('jwtToken');
@@ -234,6 +241,8 @@ function updateBalanceDisplay() {
   const balanceElement = document.getElementById('balance');
   if (balanceElement) {
     balanceElement.textContent = `Chips: ${balance}`;
+  } else {
+    console.warn('Balance element not found');
   }
 }
 
@@ -242,15 +251,21 @@ function updateUIAfterAuth() {
   const loginButton = document.getElementById('loginButton');
   const profileButton = document.getElementById('profileButton');
   const balanceElement = document.getElementById('balance');
+
+  // Log missing elements
+  if (!loginButton) console.warn('Login button not found (#loginButton)');
+  if (!profileButton) console.warn('Profile button not found (#profileButton)');
+  if (!balanceElement) console.warn('Balance element not found (#balance)');
+
   if (user) {
-    loginButton.style.display = 'none';
-    profileButton.style.display = 'inline-block';
-    balanceElement.style.display = 'inline-block';
+    if (loginButton) loginButton.style.display = 'none';
+    if (profileButton) profileButton.style.display = 'inline-block';
+    if (balanceElement) balanceElement.style.display = 'inline-block';
     updateBalanceDisplay();
   } else {
-    loginButton.style.display = 'inline-block';
-    profileButton.style.display = 'none';
-    balanceElement.style.display = 'none';
+    if (loginButton) loginButton.style.display = 'inline-block';
+    if (profileButton) profileButton.style.display = 'none';
+    if (balanceElement) balanceElement.style.display = 'none';
   }
 }
 
@@ -264,6 +279,7 @@ function showError(message) {
       errorElement.style.display = 'none';
     }, 5000);
   } else {
+    console.warn('Error message element not found (#errorMessage)');
     alert(message);
   }
 }
@@ -325,10 +341,13 @@ async function endGame(winner) {
   currentBet = 0;
 }
 
-// Update game display (simplified for canvas or DOM)
+// Update game display
 function updateGameDisplay(result = '') {
   const gameArea = document.getElementById('gameArea');
-  if (!gameArea) return;
+  if (!gameArea) {
+    console.warn('Game area not found (#gameArea)');
+    return;
+  }
 
   let html = `
     <p>Player Hand: ${playerHand.map(card => `${card.value}${card.suit}`).join(', ')} (${calculateHandValue(playerHand)})</p>
@@ -341,21 +360,26 @@ function updateGameDisplay(result = '') {
 
   const hitButton = document.getElementById('hitButton');
   const standButton = document.getElementById('standButton');
-  hitButton.disabled = gameState !== 'playing';
-  standButton.disabled = gameState !== 'playing';
+  if (hitButton) hitButton.disabled = gameState !== 'playing';
+  if (standButton) standButton.disabled = gameState !== 'playing';
 }
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded, checking auth...');
   checkAuth();
 
   const registerForm = document.getElementById('registerForm');
   if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const username = document.getElementById('registerUsername').value;
-      const email = document.getElementById('registerEmail').value;
-      const password = document.getElementById('registerPassword').value;
+      const username = document.getElementById('registerUsername')?.value;
+      const email = document.getElementById('registerEmail')?.value;
+      const password = document.getElementById('registerPassword')?.value;
+      if (!username || !email || !password) {
+        showError('Please fill in all fields.');
+        return;
+      }
       try {
         const result = await registerUser(username, email, password);
         if (result.status === 200) {
@@ -367,14 +391,20 @@ document.addEventListener('DOMContentLoaded', () => {
         showError('Registration failed. Please try again.');
       }
     });
+  } else {
+    console.warn('Register form not found (#registerForm)');
   }
 
   const loginForm = document.getElementById('loginForm');
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
+      const email = document.getElementById('loginEmail')?.value;
+      const password = document.getElementById('loginPassword')?.value;
+      if (!email || !password) {
+        showError('Please fill in all fields.');
+        return;
+      }
       try {
         const result = await loginUser(email, password);
         if (result.status === 200) {
@@ -386,38 +416,62 @@ document.addEventListener('DOMContentLoaded', () => {
         showError('Login failed. Please try again.');
       }
     });
+  } else {
+    console.warn('Login form not found (#loginForm)');
   }
 
   const betButton = document.getElementById('betButton');
   if (betButton) {
     betButton.addEventListener('click', () => {
       const betInput = document.getElementById('betAmount');
-      const betAmount = parseInt(betInput.value);
+      const betAmount = betInput ? parseInt(betInput.value) : 0;
+      if (betAmount <= 0) {
+        showError('Please enter a valid bet amount.');
+        return;
+      }
       startGame(betAmount);
     });
+  } else {
+    console.warn('Bet button not found (#betButton)');
   }
 
   const hitButton = document.getElementById('hitButton');
   if (hitButton) {
     hitButton.addEventListener('click', hit);
+  } else {
+    console.warn('Hit button not found (#hitButton)');
   }
 
   const standButton = document.getElementById('standButton');
   if (standButton) {
     standButton.addEventListener('click', stand);
+  } else {
+    console.warn('Stand button not found (#standButton)');
   }
 
   const loginButton = document.getElementById('loginButton');
   if (loginButton) {
     loginButton.addEventListener('click', () => {
-      document.getElementById('authPopup').style.display = 'block';
+      const authPopup = document.getElementById('authPopup');
+      if (authPopup) {
+        authPopup.style.display = 'block';
+      } else {
+        console.warn('Auth popup not found (#authPopup)');
+      }
     });
+  } else {
+    console.warn('Login button not found (#loginButton)');
   }
 
   const closePopup = document.getElementById('closePopup');
   if (closePopup) {
     closePopup.addEventListener('click', () => {
-      document.getElementById('authPopup').style.display = 'none';
+      const authPopup = document.getElementById('authPopup');
+      if (authPopup) {
+        authPopup.style.display = 'none';
+      }
     });
+  } else {
+    console.warn('Close popup button not found (#closePopup)');
   }
 });
