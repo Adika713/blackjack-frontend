@@ -10,7 +10,7 @@ let currentBet = 0;
 
 // Fetch with timeout and logging
 async function fetchWithTimeout(url, options = {}, timeout = 30000) {
-  console.log('Fetching:', url, 'Options:', options);
+  console.log('Fetching:', url, 'Options:', options, 'Token:', jwtToken ? jwtToken.slice(0, 10) + '...' : 'none');
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
@@ -23,7 +23,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 30000) {
       }
     });
     clearTimeout(id);
-    console.log('Fetch response:', url, 'Status:', response.status, 'Headers:', response.headers);
+    console.log('Fetch response:', url, 'Status:', response.status, 'Headers:', Object.fromEntries(response.headers));
     return response;
   } catch (error) {
     clearTimeout(id);
@@ -42,11 +42,11 @@ async function registerUser(username, email, password) {
       credentials: 'include'
     });
     const data = await response.json();
-    console.log('Register response:', data);
+    console.log('Register response:', data, 'Set-Cookie:', response.headers.get('set-cookie'));
     if (response.ok && data.token) {
       jwtToken = data.token;
       localStorage.setItem('jwtToken', jwtToken);
-      console.log('Stored JWT token:', jwtToken.slice(0, 10) + '...');
+      console.log('Stored JWT token:', jwtToken.slice(0, 10) + '...', 'LocalStorage:', localStorage.getItem('jwtToken'));
       user = data.user;
       await fetchBalance();
       updateUIAfterAuth();
@@ -70,11 +70,11 @@ async function loginUser(email, password) {
       credentials: 'include'
     });
     const data = await response.json();
-    console.log('Login response:', data);
+    console.log('Login response:', data, 'Set-Cookie:', response.headers.get('set-cookie'));
     if (response.ok && data.token) {
       jwtToken = data.token;
       localStorage.setItem('jwtToken', jwtToken);
-      console.log('Stored JWT token:', jwtToken.slice(0, 10) + '...');
+      console.log('Stored JWT token:', jwtToken.slice(0, 10) + '...', 'LocalStorage:', localStorage.getItem('jwtToken'));
       user = data.user;
       await fetchBalance();
       updateUIAfterAuth();
@@ -94,7 +94,7 @@ async function fetchBalance() {
     const response = await fetchWithTimeout(`${BACKEND_URL}/balance`, {
       credentials: 'include'
     });
-    console.log('Balance Fetch Status:', response.status, 'Token Sent:', !!jwtToken);
+    console.log('Balance Fetch Status:', response.status, 'Token Sent:', !!jwtToken, 'Cookies:', document.cookie);
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to fetch balance');
     balance = data.chips;
@@ -242,12 +242,13 @@ function updateBalanceDisplay() {
   if (balanceElement) {
     balanceElement.textContent = `Chips: ${balance}`;
   } else {
-    console.warn('Balance element not found');
+    console.warn('Balance element not found (#balance)');
   }
 }
 
 // Update UI after auth
 function updateUIAfterAuth() {
+  console.log('Updating UI, Page:', window.location.href);
   const loginButton = document.getElementById('loginButton');
   const profileButton = document.getElementById('profileButton');
   const balanceElement = document.getElementById('balance');
@@ -257,15 +258,34 @@ function updateUIAfterAuth() {
   if (!profileButton) console.warn('Profile button not found (#profileButton)');
   if (!balanceElement) console.warn('Balance element not found (#balance)');
 
+  // Only update if elements exist
+  const hasElements = loginButton || profileButton || balanceElement;
+  if (!hasElements) {
+    console.warn('No auth-related elements found, skipping UI update');
+    return;
+  }
+
   if (user) {
-    if (loginButton) loginButton.style.display = 'none';
-    if (profileButton) profileButton.style.display = 'inline-block';
-    if (balanceElement) balanceElement.style.display = 'inline-block';
-    updateBalanceDisplay();
+    if (loginButton) {
+      loginButton.style.display = 'none';
+    }
+    if (profileButton) {
+      profileButton.style.display = 'inline-block';
+    }
+    if (balanceElement) {
+      balanceElement.style.display = 'inline-block';
+      updateBalanceDisplay();
+    }
   } else {
-    if (loginButton) loginButton.style.display = 'inline-block';
-    if (profileButton) profileButton.style.display = 'none';
-    if (balanceElement) balanceElement.style.display = 'none';
+    if (loginButton) {
+      loginButton.style.display = 'inline-block';
+    }
+    if (profileButton) {
+      profileButton.style.display = 'none';
+    }
+    if (balanceElement) {
+      balanceElement.style.display = 'none';
+    }
   }
 }
 
@@ -276,7 +296,7 @@ function showError(message) {
     errorElement.textContent = message;
     errorElement.style.display = 'block';
     setTimeout(() => {
-      errorElement.style.display = 'none';
+      if (errorElement) errorElement.style.display = 'none';
     }, 5000);
   } else {
     console.warn('Error message element not found (#errorMessage)');
@@ -366,8 +386,11 @@ function updateGameDisplay(result = '') {
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded, checking auth...');
-  checkAuth();
+  console.log('DOM loaded, checking auth...', 'Page:', window.location.href);
+  // Delay checkAuth to ensure DOM is fully loaded
+  setTimeout(() => {
+    checkAuth();
+  }, 100);
 
   const registerForm = document.getElementById('registerForm');
   if (registerForm) {
