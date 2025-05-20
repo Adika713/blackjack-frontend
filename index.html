@@ -4,96 +4,68 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blackjack</title>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-900 text-white">
-  <div id="auth-popup" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center" aria-hidden="true">
-    <div class="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
-      <h2 id="auth-title" class="text-2xl mb-4">Register</h2>
-      <form id="auth-form" class="space-y-4">
-        <div>
-          <label for="username" class="block">Username</label>
-          <input type="text" id="username" class="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500">
-        </div>
-        <div>
-          <label for="email" class="block">Email</label>
-          <input type="email" id="email" class="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500" required>
-        </div>
-        <div>
-          <label for="password" class="block">Password</label>
-          <input type="password" id="password" class="w-full p-2 rounded bg-gray-700 border border-gray-600 focus:border-blue-500" required>
-        </div>
-        <div id="auth-error" class="text-red-500 hidden"></div>
-        <button type="submit" id="auth-submit" class="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded">Register</button>
-        <div id="auth-switch" class="text-center">
-          Already have an account? <a href="#" id="switch-to-login" class="text-blue-400">Login</a>
-        </div>
-      </form>
+  <!-- Navbar -->
+  <nav class="bg-gray-800 p-4 flex justify-between items-center sticky top-0 z-10">
+    <div class="flex space-x-6">
+      <a href="#" data-page="verseny" class="nav-item text-white hover:text-gray-300"><i class="fas fa-trophy mr-2"></i>Verseny</a>
+      <a href="#" data-page="leaderboard" class="nav-item text-white hover:text-gray-300"><i class="fas fa-crown mr-2"></i>Leaderboard</a>
+      <a href="#" data-page="kuldetesek" class="nav-item text-white hover:text-gray-300"><i class="fas fa-scroll mr-2"></i>Küldetések</a>
+      <a href="#" data-page="profil" class="nav-item text-white hover:text-gray-300"><i class="fas fa-user mr-2"></i>Profil</a>
     </div>
-  </div>
-
-  <nav class="bg-gray-800 p-4 flex justify-between items-center">
-    <div class="flex space-x-4">
-      <a href="#" class="nav-item" data-page="verseny">Verseny</a>
-      <a href="#" class="nav-item" data-page="leaderboard">Leaderboard</a>
-      <a href="#" class="nav-item" data-page="kuldetesek">Küldetések</a>
-      <a href="#" class="nav-item" data-page="profil">Profil</a>
-    </div>
-    <div id="chip-count">Chips: 0</div>
+    <div id="balance" class="text-white"><i class="fas fa-coins mr-2"></i>Chips: <span id="chip-count">0</span></div>
   </nav>
 
-  <div id="verseny" class="page active">
-    <div id="login-message" class="text-center py-4">
-      Connect Discord in Profil page to play
-    </div>
-    <div id="game-content" class="hidden p-4 rounded-lg mt-4">
+  <!-- Pages -->
+  <div id="verseny" class="page hidden p-6">
+    <div class="bg-green-800 rounded-lg p-6 max-w-3xl mx-auto">
       <h2 class="text-2xl mb-4">Blackjack</h2>
+      <div id="game-status" class="mb-4"></div>
       <div id="dealer-hand" class="flex space-x-2 mb-4"></div>
       <div id="player-hand" class="flex space-x-2 mb-4"></div>
-      <div>
-        Bet: <input type="number" id="bet-amount" min="1" class="p-2 rounded bg-gray-700 border border-gray-600" required>
-        <button id="deal-btn" class="bg-green-600 hover:bg-green-700 p-2 rounded ml-2">Deal</button>
+      <div class="mb-4">
+        <label for="bet-amount" class="mr-2">Bet:</label>
+        <input id="bet-amount" type="number" min="1" class="text-black p-1 rounded">
+        <button id="deal-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded ml-2">Deal</button>
       </div>
-      <div id="game-actions" class="hidden mt-4 space-x-2">
-        <button id="hit-btn" class="bg-blue-600 hover:bg-blue-700 p-2 rounded">Hit</button>
-        <button id="stay-btn" class="bg-blue-600 hover:bg-blue-700 p-2 rounded">Stay</button>
-        <button id="double-btn" class="bg-blue-600 hover:bg-blue-700 p-2 rounded hidden">Double</button>
-        <button id="split-btn" class="bg-blue-600 hover:bg-blue-700 p-2 rounded hidden">Split</button>
-        <button id="insurance-btn" class="bg-blue-600 hover:bg-blue-700 p-2 rounded hidden">Insurance</button>
+      <div id="game-actions" class="space-x-2 hidden">
+        <button id="hit-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">Hit</button>
+        <button id="stay-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">Stay</button>
+        <button id="double-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">Double</button>
+        <button id="split-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">Split</button>
+        <button id="insurance-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded">Insurance</button>
       </div>
-      <div id="game-status" class="mt-2"></div>
     </div>
   </div>
 
-  <div id="leaderboard" class="page">
-    <div class="p-4">
-      <h2 class="text-2xl mb-4">Leaderboard</h2>
-      <table id="leaderboard" class="bg-gray-800 rounded-lg">
-        <thead>
-          <tr>
-            <th class="p-2">Rank</th>
-            <th class="p-2">Name</th>
-            <th class="p-2">Chips</th>
-            <th class="p-2">Games Played</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboard-body"></tbody>
-      </table>
-      <div id="pagination" class="mt-4 flex justify-center"></div>
-    </div>
+  <div id="leaderboard" class="page hidden p-6">
+    <h2 class="text-2xl mb-4">Leaderboard</h2>
+    <table class="w-full max-w-3xl mx-auto bg-gray-800 rounded-lg">
+      <thead>
+        <tr>
+          <th class="p-2">Rank</th>
+          <th class="p-2">Name</th>
+          <th class="p-2">Chips</th>
+          <th class="p-2">Games Played</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body"></tbody>
+    </table>
+    <div id="pagination" class="mt-4 text-center"></div>
   </div>
 
-  <div id="kuldetesek" class="page">
-    <div class="p-4">
-      <h2 class="text-2xl mb-4">Küldetések</h2>
-      <p>Coming soon...</p>
-    </div>
+  <div id="kuldetesek" class="page hidden p-6">
+    <h2 class="text-2xl mb-4">Küldetések</h2>
+    <p>Coming soon...</p>
   </div>
 
-  <div id="profil" class="page">
-    <div id="profile-content" class="p-4"></div>
+  <div id="profil" class="page hidden p-6">
+    <h2 class="text-2xl mb-4">Profil</h2>
+    <div id="profile-content"></div>
   </div>
 
   <script src="script.js"></script>
