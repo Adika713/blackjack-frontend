@@ -296,15 +296,30 @@ async function fetchProfile() {
 // Balance
 async function fetchBalance() {
   try {
-    const response = await fetchWithTimeout('https://blackjack-backend-aew7.onrender.com/balance', {
+    const response = await fetch('https://blackjack-backend-aew7.onrender.com/balance', {
       method: 'GET',
-      credentials: 'include' // Ensures cookies are sent
+      credentials: 'include' // Send cookies
     });
     const data = await response.json();
     console.log('Balance:', data);
     return data;
   } catch (error) {
     console.error('Balance Error:', error);
+    throw error;
+  }
+}
+
+async function checkAuth() {
+  try {
+    const response = await fetch('https://blackjack-backend-aew7.onrender.com/check-auth', {
+      method: 'GET',
+      credentials: 'include' // Send cookies
+    });
+    const data = await response.json();
+    console.log('Auth Check:', data);
+    return data;
+  } catch (error) {
+    console.error('Auth Check Error:', error);
     throw error;
   }
 }
