@@ -248,7 +248,12 @@ function updateBalanceDisplay() {
 
 // Update UI after auth
 function updateUIAfterAuth() {
-  console.log('Updating UI, Page:', window.location.href);
+  console.log('Updating UI, Page:', window.location.href, 'DOM Elements:', {
+    loginButton: !!document.getElementById('loginButton'),
+    profileButton: !!document.getElementById('profileButton'),
+    balance: !!document.getElementById('balance')
+  });
+
   const loginButton = document.getElementById('loginButton');
   const profileButton = document.getElementById('profileButton');
   const balanceElement = document.getElementById('balance');
@@ -258,34 +263,27 @@ function updateUIAfterAuth() {
   if (!profileButton) console.warn('Profile button not found (#profileButton)');
   if (!balanceElement) console.warn('Balance element not found (#balance)');
 
-  // Only update if elements exist
-  const hasElements = loginButton || profileButton || balanceElement;
-  if (!hasElements) {
+  // Skip if no relevant elements exist
+  if (!loginButton && !profileButton && !balanceElement) {
     console.warn('No auth-related elements found, skipping UI update');
     return;
   }
 
-  if (user) {
-    if (loginButton) {
-      loginButton.style.display = 'none';
+  try {
+    if (user) {
+      if (loginButton) loginButton.style.display = 'none';
+      if (profileButton) profileButton.style.display = 'inline-block';
+      if (balanceElement) {
+        balanceElement.style.display = 'inline-block';
+        updateBalanceDisplay();
+      }
+    } else {
+      if (loginButton) loginButton.style.display = 'inline-block';
+      if (profileButton) profileButton.style.display = 'none';
+      if (balanceElement) balanceElement.style.display = 'none';
     }
-    if (profileButton) {
-      profileButton.style.display = 'inline-block';
-    }
-    if (balanceElement) {
-      balanceElement.style.display = 'inline-block';
-      updateBalanceDisplay();
-    }
-  } else {
-    if (loginButton) {
-      loginButton.style.display = 'inline-block';
-    }
-    if (profileButton) {
-      profileButton.style.display = 'none';
-    }
-    if (balanceElement) {
-      balanceElement.style.display = 'none';
-    }
+  } catch (err) {
+    console.error('Error in updateUIAfterAuth:', err);
   }
 }
 
