@@ -301,7 +301,9 @@ function updateUIAfterAuth() {
       }
       updateBalanceDisplay();
     } else {
-      if (authPopup) authPopup.classList.remove('hidden'); // Show popup if not logged in on profile page
+      if (authPopup && window.location.pathname.includes('/profil')) {
+        authPopup.classList.remove('hidden');
+      }
       if (balanceElement) balanceElement.classList.add('hidden');
       if (profilLink) profilLink.classList.remove('text-yellow-400');
       if (loginMessage) loginMessage.classList.remove('hidden');
@@ -418,12 +420,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const authTitle = document.getElementById('auth-title');
   const authSubmit = document.getElementById('auth-submit');
   const switchLink = document.getElementById('switch-to-login');
-  const authSwitch = document.getElementById('auth-switch');
   const usernameInput = document.getElementById('username');
   let isRegisterMode = true;
 
-  if (!authPopup || !authTitle || !authSubmit || !switchLink || !authSwitch) {
-    console.warn('Auth elements not found (#auth-popup, #auth-title, #auth-submit, #switch-to-login, #auth-switch)');
+  if (!authPopup || !authTitle || !authSubmit || !switchLink) {
+    console.warn('Auth elements not found (#auth-popup, #auth-title, #auth-submit, #switch-to-login)');
   }
 
   if (switchLink) {
@@ -433,17 +434,10 @@ document.addEventListener('DOMContentLoaded', () => {
       isRegisterMode = !isRegisterMode;
       authTitle.textContent = isRegisterMode ? 'Register' : 'Login';
       authSubmit.textContent = isRegisterMode ? 'Register' : 'Login';
-      authSwitch.innerHTML = isRegisterMode
-        ? 'Already have an account? <a href="#" id="switch-to-login" class="text-blue-400">Login</a>'
-        : 'Need an account? <a href="#" id="switch-to-login" class="text-blue-400">Register</a>';
+      switchLink.textContent = isRegisterMode ? 'Login' : 'Register';
       if (usernameInput) {
         usernameInput.style.display = isRegisterMode ? 'block' : 'none';
         usernameInput.parentElement.style.display = isRegisterMode ? 'block' : 'none';
-      }
-      // Rebind switch link
-      const newSwitchLink = document.getElementById('switch-to-login');
-      if (newSwitchLink) {
-        newSwitchLink.addEventListener('click', arguments.callee);
       }
     });
   }
@@ -489,15 +483,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Close auth popup
-  const closeButton = document.createElement('button');
-  closeButton.textContent = '×';
-  closeButton.className = 'absolute top-2 right-2 text-white text-xl';
-  const authPopupInner = authPopup?.querySelector('div');
-  if (authPopupInner) {
-    authPopupInner.appendChild(closeButton);
+  const closeButton = document.querySelector('#close-auth-popup');
+  if (closeButton) {
     closeButton.addEventListener('click', () => {
+      console.log('Close auth popup clicked');
       if (authPopup) authPopup.classList.add('hidden');
     });
+  } else {
+    console.warn('Close auth popup button not found (#close-auth-popup)');
   }
 
   // Navigation handling
